@@ -1,0 +1,41 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Word / Excel lock files
+~$*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+*.egg-info/
+
+# Jupyter
+.jupyter/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Large raw data files — re-download via puller scripts to reproduce
+# Keep tracked: scripts, notebooks, processed outputs, README, requirements
+data/raw/bts_t100/*.csv
+data/raw/bts_t100/*.zip
+data/raw/faa/*.csv
+data/raw/census/*.csv
+data/raw/census/*.zip
+data/raw/census/*.txt
+data/raw/noaa/
+
+# Keep these small reference files tracked:
+!data/raw/amazon_air/amazon_air_facilities.csv
+!data/raw/amazon_air/README.md

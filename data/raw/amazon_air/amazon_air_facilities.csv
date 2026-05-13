@@ -1,0 +1,29 @@
+airport_id,airport_icao,airport_name,role,opened_year,status,city,state,latitude,longitude,source_url,snapshot_date
+CVG,KCVG,Cincinnati/Northern Kentucky International,primary_hub,2017,active,Hebron,KY,39.0488,-84.6678,https://www.aboutamazon.com/news/transportation/amazon-air-hub-celebrates-grand-opening,2026-05-12
+SBD,KSBD,San Bernardino International,regional_hub,2021,active,San Bernardino,CA,34.0954,-117.2348,https://www.aboutamazon.com/news/transportation/amazon-air-celebrates-second-air-gateway-on-the-west-coast,2026-05-12
+LAL,KLAL,Lakeland Linder International,regional_hub,2020,active,Lakeland,FL,27.9888,-82.0186,https://www.aboutamazon.com/news/transportation/amazon-air-lands-in-lakeland-florida,2026-05-12
+ILN,KILN,Wilmington Air Park,regional_hub,2016,active,Wilmington,OH,39.4276,-83.7921,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+ANC,PANC,Ted Stevens Anchorage International,polar_gateway,2019,active,Anchorage,AK,61.1741,-149.9961,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+AFW,KAFW,Perot Field Fort Worth Alliance,gateway,2019,active,Fort Worth,TX,32.9874,-97.3194,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+IND,KIND,Indianapolis International,gateway,2017,active,Indianapolis,IN,39.7173,-86.2944,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+ORF,KORF,Norfolk International,gateway,2018,active,Norfolk,VA,36.8946,-76.2012,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+PHL,KPHL,Philadelphia International,gateway,2019,active,Philadelphia,PA,39.8729,-75.2437,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+RFD,KRFD,Chicago Rockford International,gateway,2016,active,Rockford,IL,42.1954,-89.0972,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+CMH,KCMH,John Glenn Columbus International,gateway,2019,active,Columbus,OH,39.998,-82.8919,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+CLT,KCLT,Charlotte Douglas International,gateway,2020,active,Charlotte,NC,35.214,-80.9431,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+MSP,KMSP,Minneapolis-St. Paul International,gateway,2020,active,Minneapolis,MN,44.8848,-93.2223,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+EWR,KEWR,Newark Liberty International,gateway,2020,active,Newark,NJ,40.6925,-74.1687,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+IAH,KIAH,George Bush Intercontinental Houston,gateway,2020,active,Houston,TX,29.9844,-95.3414,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+MIA,KMIA,Miami International,gateway,2019,active,Miami,FL,25.7959,-80.287,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+SFO,KSFO,San Francisco International,gateway,2019,active,San Francisco,CA,37.6213,-122.379,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+SEA,KSEA,Seattle-Tacoma International,gateway,2020,active,SeaTac,WA,47.4502,-122.3088,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+SDF,KSDF,Louisville Muhammad Ali International,gateway,2019,active,Louisville,KY,38.1744,-85.7361,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+SAT,KSAT,San Antonio International,mini_station,2020,active,San Antonio,TX,29.5337,-98.4698,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+AUS,KAUS,Austin-Bergstrom International,mini_station,2020,active,Austin,TX,30.1945,-97.6699,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+PSP,KPSP,Palm Springs International,mini_station,2021,active,Palm Springs,CA,33.8297,-116.507,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+PIT,KPIT,Pittsburgh International,mini_station,2020,active,Pittsburgh,PA,40.4915,-80.2329,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+MHT,KMHT,Manchester-Boston Regional,mini_station,2018,active,Manchester,NH,42.9326,-71.4357,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+BNA,KBNA,Nashville International,mini_station,2020,active,Nashville,TN,36.1245,-86.6782,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+LEX,KLEX,Blue Grass,mini_station,2016,active,Lexington,KY,38.0365,-84.6059,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+MCO,KMCO,Orlando International,mini_station,2018,active,Orlando,FL,28.4312,-81.3081,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12
+OMA,KOMA,Eppley Airfield,mini_station,2020,active,Omaha,NE,41.3032,-95.8941,https://en.wikipedia.org/wiki/Amazon_Air,2026-05-12

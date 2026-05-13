@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Where Should Amazon Air Build Its Next Hub? · Aikerim Imanbayeva</title>
+<meta name="description" content="A data-driven analysis recommending the next regional hub location for Amazon Air, using public BTS, FAA, Census, and NOAA data." />
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root {
+    --primary: #0F2A4D;
+    --accent: #FF9900;
+    --text: #1a1a1a;
+    --muted: #5a5a5a;
+    --bg: #ffffff;
+    --bg-alt: #f7f9fc;
+    --bg-dark: #0F2A4D;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(15,42,77,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Sticky nav */
+  nav.topnav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  nav.topnav .brand { font-weight: 700; color: var(--primary); font-size: 14px; letter-spacing: 0.02em; }
+  nav.topnav .brand span.dot { color: var(--accent); }
+  nav.topnav .links { display: flex; gap: 22px; font-size: 13px; }
+  nav.topnav .links a { color: var(--muted); text-decoration: none; transition: color 0.15s; }
+  nav.topnav .links a:hover { color: var(--primary); }
+  @media (max-width: 720px) { nav.topnav .links { display: none; } }
+
+  section { padding: 88px 32px; max-width: 1100px; margin: 0 auto; }
+  section.alt { background: var(--bg-alt); max-width: none; }
+  section.alt > .inner { max-width: 1100px; margin: 0 auto; }
+  section.dark { background: var(--bg-dark); color: white; max-width: none; }
+  section.dark > .inner { max-width: 1100px; margin: 0 auto; }
+  section.dark h2, section.dark h3 { color: white; }
+  section.dark p { color: rgba(255,255,255,0.85); }
+
+  .label {
+    display: inline-block;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+    color: var(--accent); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  h1 { font-size: clamp(36px, 6vw, 60px); color: var(--primary); line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: clamp(26px, 4vw, 36px); color: var(--primary); line-height: 1.2; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.01em; }
+  h3 { font-size: 22px; color: var(--primary); line-height: 1.3; font-weight: 700; margin-bottom: 12px; margin-top: 24px; }
+  p { margin-bottom: 16px; color: var(--text); }
+  p.lead { font-size: 19px; color: var(--muted); max-width: 720px; }
+  a { color: var(--primary); }
+  a:hover { color: var(--accent); }
+
+  /* Hero */
+  .hero { padding: 140px 32px 100px; max-width: 1100px; margin: 0 auto; }
+  .hero h1 { margin-bottom: 28px; }
+  .hero p.lead { font-size: 22px; }
+  .hero .byline {
+    font-size: 14px; color: var(--muted); margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--border);
+  }
+  .hero .byline strong { color: var(--text); }
+
+  /* Stat strip */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin: 32px 0; }
+  .stat { background: white; padding: 28px 20px; border-radius: 10px; box-shadow: var(--shadow); border-top: 3px solid var(--accent); }
+  .stat .num { font-size: 36px; font-weight: 800; color: var(--primary); line-height: 1; }
+  .stat .lbl { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  /* Dimension cards */
+  .dims { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-top: 24px; }
+  .dim {
+    background: white; padding: 24px; border-radius: 10px;
+    border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .dim:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .dim .ico { font-size: 24px; color: var(--accent); margin-bottom: 12px; }
+  .dim h4 { font-size: 15px; color: var(--primary); font-weight: 700; margin-bottom: 6px; }
+  .dim p { font-size: 13px; color: var(--muted); margin: 0; }
+
+  /* Recommendation cards */
+  .recs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 32px; }
+  .rec {
+    background: white; border-radius: 14px; padding: 32px;
+    box-shadow: var(--shadow); border-top: 4px solid var(--accent);
+    position: relative;
+  }
+  .rec.muted { border-top-color: var(--muted); opacity: 0.92; }
+  .rec .rank { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
+  .rec h3 { margin-top: 4px; margin-bottom: 4px; }
+  .rec .sub { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+  .rec .score-big {
+    font-size: 56px; font-weight: 800; color: var(--primary); line-height: 1;
+    display: flex; align-items: baseline; gap: 8px; margin-bottom: 20px;
+  }
+  .rec .score-big small { font-size: 14px; color: var(--muted); font-weight: 400; }
+  .rec .dimrow { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 13px; }
+  .rec .dimrow .nm { width: 110px; color: var(--muted); }
+  .rec .dimrow .bar { flex: 1; height: 6px; background: var(--bg-alt); border-radius: 3px; overflow: hidden; }
+  .rec .dimrow .bar .fill { height: 100%; background: var(--accent); border-radius: 3px; }
+  .rec .dimrow .val { font-weight: 600; width: 30px; text-align: right; color: var(--primary); }
+  .rec .takeaway { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; color: var(--text); }
+
+  /* Tables */
+  table.dt { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+  table.dt th, table.dt td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.dt th { background: var(--bg-alt); font-weight: 700; color: var(--primary); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+  table.dt td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.dt tr:hover { background: var(--bg-alt); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+  .tag.amz { background: var(--accent); color: white; }
+  .tag.no { background: var(--bg-alt); color: var(--muted); border: 1px solid var(--border); }
+
+  /* Plot containers */
+  .plot { background: white; padding: 16px; border-radius: 10px; border: 1px solid var(--border); margin-top: 24px; }
+
+  /* Footer */
+  footer { padding: 60px 32px 80px; background: var(--bg-dark); color: rgba(255,255,255,0.85); }
+  footer .inner { max-width: 1100px; margin: 0 auto; }
+  footer h4 { color: white; margin-bottom: 10px; font-size: 16px; }
+  footer .cols { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; margin-top: 24px; }
+  @media (max-width: 720px) { footer .cols { grid-template-columns: 1fr; } }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer .copy { margin-top: 40px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: rgba(255,255,255,0.5); }
+
+  /* Limitations */
+  .limits { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-top: 28px; }
+  .limit { background: white; padding: 24px; border-radius: 10px; border-left: 3px solid var(--accent); box-shadow: var(--shadow); }
+  .limit h4 { font-size: 15px; color: var(--primary); margin-bottom: 8px; font-weight: 700; }
+  .limit p { font-size: 14px; color: var(--muted); margin: 0; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand">Amazon Air Hub Location <span class="dot">·</span></div>
+  <div class="links">
+    <a href="#question">Question</a>
+    <a href="#approach">Approach</a>
+    <a href="#findings">Findings</a>
+    <a href="#picks">Top 3</a>
+    <a href="#limits">Limitations</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <span class="label">Project 2 · Aviation × Analytics Portfolio</span>
+  <h1>Where should Amazon Air build its next regional hub?</h1>
+  <p class="lead">
+    A weighted Hub Fitness Index, built from five public datasets, scores 494 US airports
+    across cargo activity, runway capacity, population reach, weather, and network complementarity.
+    The model surfaces two practical recommendations — and one telling methodological artifact.
+  </p>
+  <div class="byline">
+    <strong>Aikerim Imanbayeva</strong> · MSBA, University of Washington Tacoma · May 2026 ·
+    <a href="https://github.com/hugewave1" target="_blank" rel="noopener">github.com/hugewave1</a>
+  </div>
+</div>
+
+<!-- STATS -->
+<section style="padding-top: 0;">
+  <div class="stats">
+    <div class="stat"><div class="num">494</div><div class="lbl">Candidate airports analyzed</div></div>
+    <div class="stat"><div class="num">28</div><div class="lbl">Amazon Air facilities mapped</div></div>
+    <div class="stat"><div class="num">6 yrs</div><div class="lbl">Of BTS cargo data (2020–2025)</div></div>
+    <div class="stat"><div class="num">5</div><div class="lbl">Public data sources integrated</div></div>
+  </div>
+</section>
+
+<!-- BUSINESS QUESTION -->
+<section class="alt" id="question">
+  <div class="inner">
+    <span class="label">The Business Question</span>
+    <h2>Hub location is a half-billion-dollar bet.</h2>
+    <p class="lead">
+      Amazon Air operates a primary sortation hub at Cincinnati (CVG) and three regional hubs at San Bernardino,
+      Lakeland, and Wilmington Ohio. As the network grows, the wrong next-hub choice
+      costs hundreds of millions in fixed investment and decades of operating inefficiency.
+      The right one compresses last-mile distance for hundreds of millions of packages annually.
+    </p>
+    <p>
+      Amazon's specific selection criteria are proprietary. But the underlying inputs — air-cargo flow,
+      airport infrastructure, population density, weather, and network geometry — are all in public data.
+      Recreating this decision from public data is exactly the kind of analytical exercise a network
+      strategy team would actually run.
+    </p>
+  </div>
+</section>
+
+<!-- APPROACH -->
+<section id="approach">
+  <span class="label">The Approach</span>
+  <h2>One index. Five dimensions. Real-world validation.</h2>
+  <p class="lead">
+    Every candidate airport receives a 0–100 score on each of five dimensions, blended into
+    a Hub Fitness Index using weights that are stress-tested through sensitivity analysis.
+  </p>
+
+  <div class="dims">
+    <div class="dim">
+      <div class="ico">📦</div>
+      <h4>Cargo activity</h4>
+      <p>2025 freight throughput from BTS T-100 Segment data, log-scaled to handle a 700× range.</p>
+    </div>
+    <div class="dim">
+      <div class="ico">🛬</div>
+      <h4>Runway capacity</h4>
+      <p>Longest runway plus number of long runways from FAA Airport Master Record.</p>
+    </div>
+    <div class="dim">
+      <div class="ico">👥</div>
+      <h4>Population catchment</h4>
+      <p>People within a 4-hour drive proxy from US Census + TIGER county polygons.</p>
+    </div>
+    <div class="dim">
+      <div class="ico">☁️</div>
+      <h4>Weather reliability</h4>
+      <p>Placeholder latitude proxy pending NOAA disruption-day data integration.</p>
+    </div>
+    <div class="dim">
+      <div class="ico">🗺️</div>
+      <h4>Geographic complementarity</h4>
+      <p>Distance to nearest existing Amazon hub — rewards filling network gaps, not duplicating coverage.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FINDINGS: CARGO CONCENTRATION -->
+<section class="alt" id="findings">
+  <div class="inner">
+    <span class="label">Finding 1 · Cargo Concentration</span>
+    <h2>US air cargo is wildly concentrated.</h2>
+    <p class="lead">
+      The top 20 airports handle 72% of all US domestic cargo. The top 3 alone — SDF (UPS),
+      MEM (FedEx), and ORD — handle a third of the country's freight. This is a hub-and-spoke
+      economy with very few hubs.
+    </p>
+    <div id="cargoChart" class="plot" style="height: 540px;"></div>
+  </div>
+</section>
+
+<!-- FINDINGS: NETWORK MAP -->
+<section>
+  <span class="label">Finding 2 · The Existing Network</span>
+  <h2>Amazon's Midwest belt is dense. The interior West is wide open.</h2>
+  <p class="lead">
+    Amazon Air's 28 facilities cluster along an SDF–CVG–IND–CMH–ILN axis in the Midwest,
+    plus coastal anchors. Large swaths — the Mountain West, Pacific Northwest beyond
+    Seattle, the Upper Midwest beyond Minneapolis — have no Amazon Air presence.
+  </p>
+  <div id="mapChart" class="plot" style="height: 600px;"></div>
+</section>
+
+<!-- TOP 3 RECOMMENDATIONS -->
+<section class="alt" id="picks">
+  <div class="inner">
+    <span class="label">The Recommendation</span>
+    <h2>Two practical hubs. One revealing artifact.</h2>
+    <p class="lead">
+      After scoring all 80 top-cargo candidates across all five dimensions, three airports
+      lead the pack. Two — JFK and DFW — are real recommendations. The third — HNL — is
+      where the model breaks in a useful way.
+    </p>
+
+    <div class="recs" id="recsContainer"></div>
+
+    <div style="margin-top: 36px; padding: 24px; background: white; border-radius: 10px; border-left: 3px solid var(--accent);">
+      <h3 style="margin-top: 0;">Why HNL surfaces — and why it's not the recommendation</h3>
+      <p>
+        Honolulu scores #1 because it's perfectly isolated from every existing Amazon hub (2,621 mi)
+        and has favorable weather under the latitude proxy. But its 0.4M population catchment
+        and offshore position mean it cannot serve mainland delivery routes — Anchorage already
+        functions as Amazon's Pacific gateway. This is a useful methodological boundary case,
+        not a business recommendation. The practical top 2 are JFK and DFW.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- DIMENSION HEATMAP -->
+<section>
+  <span class="label">How The Scores Combine</span>
+  <h2>Each airport has a profile — strengths, weaknesses, trade-offs.</h2>
+  <p class="lead">
+    The heatmap below shows the dimensional scores for the top 15 candidates.
+    JFK dominates catchment; DFW is balanced; HNL is extreme on complementarity and weather but zero on catchment.
+  </p>
+  <div id="heatmapChart" class="plot" style="height: 600px;"></div>
+</section>
+
+<!-- SENSITIVITY -->
+<section class="alt">
+  <div class="inner">
+    <span class="label">Sensitivity Analysis</span>
+    <h2>Are the top picks robust to different weighting philosophies?</h2>
+    <p class="lead">
+      Four alternative weighting schemes test whether the top recommendations are artifacts
+      of equal weighting. JFK, DFW, and HNL appear in the top 10 across all four schemes.
+      Secondary robust candidates: ORD, IAD, DEN, ATL.
+    </p>
+    <table class="dt" style="margin-top: 28px;">
+      <thead><tr><th>Rank</th><th>Equal (default)</th><th>Catchment-heavy</th><th>Operations-heavy</th><th>Gap-filling</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>HNL</strong></td><td><strong>JFK</strong></td><td><strong>HNL</strong></td><td><strong>HNL</strong></td></tr>
+        <tr><td>2</td><td><strong>JFK</strong></td><td>IAD</td><td><strong>JFK</strong></td><td><strong>JFK</strong></td></tr>
+        <tr><td>3</td><td><strong>DFW</strong></td><td>BWI</td><td><strong>DFW</strong></td><td>KOA</td></tr>
+        <tr><td>4</td><td>MEM</td><td>ABE</td><td>MEM</td><td><strong>DFW</strong></td></tr>
+        <tr><td>5</td><td>ATL</td><td>MDT</td><td>LAX</td><td>IAD</td></tr>
+        <tr><td>6</td><td>ORD</td><td><strong>DFW</strong></td><td>ATL</td><td>BOS</td></tr>
+        <tr><td>7</td><td>KOA</td><td>BDL</td><td>ORD</td><td>BWI</td></tr>
+        <tr><td>8</td><td>LAX</td><td><strong>HNL</strong></td><td>DEN</td><td>DEN</td></tr>
+        <tr><td>9</td><td>DEN</td><td>ORD</td><td>ONT</td><td>ATL</td></tr>
+        <tr><td>10</td><td>IAD</td><td>BOS</td><td>LAS</td><td>BDL</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 16px; font-size: 14px; color: var(--muted);">
+      <strong>Bold</strong> indicates appearance in 3 or more schemes — these are the most defensible picks.
+    </p>
+  </div>
+</section>
+
+<!-- LIMITATIONS -->
+<section id="limits">
+  <span class="label">Honest Limitations</span>
+  <h2>What this analysis doesn't capture.</h2>
+  <p class="lead">
+    A real-world hub investment decision would not be made on this analysis alone.
+    Five named limitations — each with a specific remediation path.
+  </p>
+
+  <div class="limits">
+    <div class="limit">
+      <h4>Weather is a placeholder</h4>
+      <p>Uses latitude as a proxy. Real NOAA disruption-day data would refine all weather scores and likely drop HNL substantially.</p>
+    </div>
+    <div class="limit">
+      <h4>Straight-line catchment distance</h4>
+      <p>240-mile radius is a 4-hour drive proxy. Real isochrones via routing APIs (OSRM) would refine catchment for top picks.</p>
+    </div>
+    <div class="limit">
+      <h4>No cost dimension</h4>
+      <p>Real estate, labor wages, and cost-of-living matter. BLS QCEW + COLI integration would penalize JFK and favor DFW.</p>
+    </div>
+    <div class="limit">
+      <h4>Hand-built facility list</h4>
+      <p>Amazon doesn't publish a comprehensive facility list. Best-effort compilation from press releases and FAA filings.</p>
+    </div>
+    <div class="limit">
+      <h4>Weights are subjective</h4>
+      <p>Default 20%-each is a neutral starting point. Real decisions calibrate weights to stated network strategy.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="inner">
+    <h2 style="color: white; max-width: 700px;">Project 2 in the Aviation × Analytics portfolio series</h2>
+    <p style="color: rgba(255,255,255,0.7); max-width: 700px;">
+      A planned 3–4 project portfolio exploring how data analytics answers real business questions
+      in aviation, logistics, and adjacent industries. Each project stands alone but builds toward
+      roles in data and business analytics at companies operating at the intersection of aviation,
+      logistics, and consumer technology.
+    </p>
+    <div class="cols">
+      <div>
+        <h4>Data sources</h4>
+        <p style="font-size: 14px; line-height: 1.7;">
+          BTS T-100 Segment · FAA Airport Master Record · US Census ACS 5-Year (B01003) · TIGER county polygons · Amazon Air facility list (hand-compiled)
+        </p>
+      </div>
+      <div>
+        <h4>Tools</h4>
+        <p style="font-size: 14px; line-height: 1.7;">
+          Python · pandas · geopandas · matplotlib · seaborn · Plotly · Jupyter
+        </p>
+      </div>
+      <div>
+        <h4>Links</h4>
+        <p style="font-size: 14px; line-height: 1.7;">
+          <a href="https://github.com/hugewave1" target="_blank" rel="noopener">GitHub repo</a><br>
+          <a href="../reports/Business_Analysis_Report.pdf">Full PDF report</a><br>
+          <a href="../reports/Business_Analysis_Report.docx">Word version</a>
+        </p>
+      </div>
+    </div>
+    <div class="copy">© 2026 Aikerim Imanbayeva · Built with public data and Python</div>
+  </div>
+</footer>
+
+<script>
+// === Embedded data (generated from data/processed/) ===
+const DATA = {"top15_by_index":[{"fitness_rank":1,"ident":"HNL","name":"Daniel K Inouye Intl","state":"HI","lat":21.32,"lon":-157.92,"is_amazon_air":false,"score_cargo":56.67,"score_runway":59.67,"score_catchment":0.12,"score_weather":94.34,"score_complementarity":100.0,"hub_fitness_index":62.16},{"fitness_rank":2,"ident":"JFK","name":"John F Kennedy Intl","state":"NY","lat":40.64,"lon":-73.78,"is_amazon_air":false,"score_cargo":63.1,"score_runway":87.59,"score_catchment":98.33,"score_weather":25.03,"score_complementarity":35.73,"hub_fitness_index":61.96},{"fitness_rank":3,"ident":"DFW","name":"Dallas-Fort Worth Intl","state":"TX","lat":32.9,"lon":-97.04,"is_amazon_air":false,"score_cargo":64.01,"score_runway":78.34,"score_catchment":40.71,"score_weather":52.8,"score_complementarity":54.05,"hub_fitness_index":57.98},{"fitness_rank":4,"ident":"IAH","name":"George Bush Intcntl/Houston","state":"TX","lat":29.98,"lon":-95.34,"is_amazon_air":true,"score_cargo":53.4,"score_runway":66.68,"score_catchment":41.27,"score_weather":63.25,"score_complementarity":54.43,"hub_fitness_index":55.81},{"fitness_rank":5,"ident":"MIA","name":"Miami Intl","state":"FL","lat":25.8,"lon":-80.29,"is_amazon_air":true,"score_cargo":68.04,"score_runway":75.14,"score_catchment":28.51,"score_weather":78.28,"score_complementarity":12.35,"hub_fitness_index":52.46},{"fitness_rank":6,"ident":"EWR","name":"Newark Liberty Intl","state":"NJ","lat":40.69,"lon":-74.17,"is_amazon_air":true,"score_cargo":55.23,"score_runway":38.34,"score_catchment":99.81,"score_weather":24.84,"score_complementarity":34.41,"hub_fitness_index":50.53},{"fitness_rank":7,"ident":"PHL","name":"Philadelphia Intl","state":"PA","lat":39.87,"lon":-75.24,"is_amazon_air":true,"score_cargo":52.64,"score_runway":46.67,"score_catchment":95.08,"score_weather":27.79,"score_complementarity":30.39,"hub_fitness_index":50.51},{"fitness_rank":8,"ident":"MEM","name":"Frederick W Smith Intl/Memphis","state":"TN","lat":35.04,"lon":-89.98,"is_amazon_air":false,"score_cargo":94.54,"score_runway":59.34,"score_catchment":22.8,"score_weather":45.11,"score_complementarity":26.85,"hub_fitness_index":49.73},{"fitness_rank":9,"ident":"AUS","name":"Austin-Bergstrom Intl","state":"TX","lat":30.19,"lon":-97.67,"is_amazon_air":true,"score_cargo":30.43,"score_runway":48.75,"score_catchment":41.54,"score_weather":62.5,"score_complementarity":63.76,"hub_fitness_index":49.4},{"fitness_rank":10,"ident":"ATL","name":"Hartsfield/Jackson Atlanta Intl","state":"GA","lat":33.64,"lon":-84.43,"is_amazon_air":false,"score_cargo":55.48,"score_runway":69.92,"score_catchment":45.68,"score_weather":50.15,"score_complementarity":24.95,"hub_fitness_index":49.23},{"fitness_rank":11,"ident":"ORD","name":"Chicago O'Hare Intl","state":"IL","lat":41.98,"lon":-87.91,"is_amazon_air":false,"score_cargo":75.45,"score_runway":75.0,"score_catchment":55.74,"score_weather":20.24,"score_complementarity":17.62,"hub_fitness_index":48.81},{"fitness_rank":12,"ident":"KOA","name":"Ellison Onizuka Kona Intl At Keahole","state":"HI","lat":19.74,"lon":-156.05,"is_amazon_air":false,"score_cargo":13.17,"score_runway":28.34,"score_catchment":0.0,"score_weather":100.0,"score_complementarity":100.0,"hub_fitness_index":48.3},{"fitness_rank":13,"ident":"SDF","name":"Louisville Muhammad Ali Intl","state":"KY","lat":38.17,"lon":-85.74,"is_amazon_air":true,"score_cargo":100.0,"score_runway":55.73,"score_catchment":44.09,"score_weather":33.88,"score_complementarity":5.57,"hub_fitness_index":47.85},{"fitness_rank":14,"ident":"LAX","name":"Los Angeles Intl","state":"CA","lat":33.94,"lon":-118.41,"is_amazon_air":false,"score_cargo":66.93,"score_runway":74.36,"score_catchment":42.65,"score_weather":49.05,"score_complementarity":4.53,"hub_fitness_index":47.51},{"fitness_rank":15,"ident":"DEN","name":"Denver Intl","state":"CO","lat":39.86,"lon":-104.67,"is_amazon_air":false,"score_cargo":46.0,"score_runway":100.0,"score_catchment":9.68,"score_weather":27.82,"score_complementarity":53.24,"hub_fitness_index":47.35}],"top3_recs":[{"ident":"HNL","name":"Daniel K Inouye Intl","state":"HI","lat":21.32,"lon":-157.92,"score_cargo":56.67,"score_runway":59.67,"score_catchment":0.12,"score_weather":94.34,"score_complementarity":100.0,"hub_fitness_index":62.16},{"ident":"JFK","name":"John F Kennedy Intl","state":"NY","lat":40.64,"lon":-73.78,"score_cargo":63.1,"score_runway":87.59,"score_catchment":98.33,"score_weather":25.03,"score_complementarity":35.73,"hub_fitness_index":61.96},{"ident":"DFW","name":"Dallas-Fort Worth Intl","state":"TX","lat":32.9,"lon":-97.04,"score_cargo":64.01,"score_runway":78.34,"score_catchment":40.71,"score_weather":52.8,"score_complementarity":54.05,"hub_fitness_index":57.98}],"top20_cargo":[{"ident":"SDF","name":"Louisville Muhammad Ali Intl","state":"KY","throughput_M":6960.0,"is_amazon_air":true},{"ident":"MEM","name":"Frederick W Smith Intl/Memphis","state":"TN","throughput_M":5366.0,"is_amazon_air":false},{"ident":"ORD","name":"Chicago O'Hare Intl","state":"IL","throughput_M":2160.0,"is_amazon_air":false},{"ident":"CVG","name":"Cincinnati/Northern Kentucky Intl","state":"KY","throughput_M":2080.0,"is_amazon_air":true},{"ident":"ONT","name":"Ontario Intl","state":"CA","throughput_M":1697.0,"is_amazon_air":false},{"ident":"IND","name":"Indianapolis Intl","state":"IN","throughput_M":1592.0,"is_amazon_air":true},{"ident":"MIA","name":"Miami Intl","state":"FL","throughput_M":1516.0,"is_amazon_air":true},{"ident":"LAX","name":"Los Angeles Intl","state":"CA","throughput_M":1438.0,"is_amazon_air":false},{"ident":"DFW","name":"Dallas-Fort Worth Intl","state":"TX","throughput_M":1251.0,"is_amazon_air":false},{"ident":"JFK","name":"John F Kennedy Intl","state":"NY","throughput_M":1198.0,"is_amazon_air":false},{"ident":"RFD","name":"Chicago/Rockford Intl","state":"IL","throughput_M":1106.0,"is_amazon_air":true},{"ident":"OAK","name":"Oakland San Francisco Bay","state":"CA","throughput_M":1045.0,"is_amazon_air":false},{"ident":"HNL","name":"Daniel K Inouye Intl","state":"HI","throughput_M":882.0,"is_amazon_air":false},{"ident":"ATL","name":"Hartsfield/Jackson Atlanta Intl","state":"GA","throughput_M":833.0,"is_amazon_air":false},{"ident":"EWR","name":"Newark Liberty Intl","state":"NJ","throughput_M":823.0,"is_amazon_air":true},{"ident":"IAH","name":"George Bush Intcntl/Houston","state":"TX","throughput_M":755.0,"is_amazon_air":true},{"ident":"PHL","name":"Philadelphia Intl","state":"PA","throughput_M":728.0,"is_amazon_air":true},{"ident":"PHX","name":"Phoenix Sky Harbor Intl","state":"AZ","throughput_M":684.0,"is_amazon_air":false},{"ident":"AFW","name":"Perot Fld/Fort Worth Alliance","state":"TX","throughput_M":674.0,"is_amazon_air":true},{"ident":"SEA","name":"Seattle-Tacoma Intl","state":"WA","throughput_M":628.0,"is_amazon_air":true}],"amazon_facilities":[{"airport_id":"CVG","airport_name":"Cincinnati/Northern Kentucky International","role":"primary_hub","city":"Hebron","state":"KY","latitude":39.0488,"longitude":-84.6678},{"airport_id":"SBD","airport_name":"San Bernardino International","role":"regional_hub","city":"San Bernardino","state":"CA","latitude":34.0954,"longitude":-117.2348},{"airport_id":"LAL","airport_name":"Lakeland Linder International","role":"regional_hub","city":"Lakeland","state":"FL","latitude":27.9888,"longitude":-82.0186},{"airport_id":"ILN","airport_name":"Wilmington Air Park","role":"regional_hub","city":"Wilmington","state":"OH","latitude":39.4276,"longitude":-83.7921},{"airport_id":"ANC","airport_name":"Ted Stevens Anchorage International","role":"polar_gateway","city":"Anchorage","state":"AK","latitude":61.1741,"longitude":-149.9961},{"airport_id":"AFW","airport_name":"Perot Field Fort Worth Alliance","role":"gateway","city":"Fort Worth","state":"TX","latitude":32.9874,"longitude":-97.3194},{"airport_id":"IND","airport_name":"Indianapolis International","role":"gateway","city":"Indianapolis","state":"IN","latitude":39.7173,"longitude":-86.2944},{"airport_id":"ORF","airport_name":"Norfolk International","role":"gateway","city":"Norfolk","state":"VA","latitude":36.8946,"longitude":-76.2012},{"airport_id":"PHL","airport_name":"Philadelphia International","role":"gateway","city":"Philadelphia","state":"PA","latitude":39.8729,"longitude":-75.2437},{"airport_id":"RFD","airport_name":"Chicago Rockford International","role":"gateway","city":"Rockford","state":"IL","latitude":42.1954,"longitude":-89.0972},{"airport_id":"CMH","airport_name":"John Glenn Columbus International","role":"gateway","city":"Columbus","state":"OH","latitude":39.998,"longitude":-82.8919},{"airport_id":"CLT","airport_name":"Charlotte Douglas International","role":"gateway","city":"Charlotte","state":"NC","latitude":35.214,"longitude":-80.9431},{"airport_id":"MSP","airport_name":"Minneapolis-St. Paul International","role":"gateway","city":"Minneapolis","state":"MN","latitude":44.8848,"longitude":-93.2223},{"airport_id":"EWR","airport_name":"Newark Liberty International","role":"gateway","city":"Newark","state":"NJ","latitude":40.6925,"longitude":-74.1687},{"airport_id":"IAH","airport_name":"George Bush Intercontinental Houston","role":"gateway","city":"Houston","state":"TX","latitude":29.9844,"longitude":-95.3414},{"airport_id":"MIA","airport_name":"Miami International","role":"gateway","city":"Miami","state":"FL","latitude":25.7959,"longitude":-80.287},{"airport_id":"SFO","airport_name":"San Francisco International","role":"gateway","city":"San Francisco","state":"CA","latitude":37.6213,"longitude":-122.379},{"airport_id":"SEA","airport_name":"Seattle-Tacoma International","role":"gateway","city":"SeaTac","state":"WA","latitude":47.4502,"longitude":-122.3088},{"airport_id":"SDF","airport_name":"Louisville Muhammad Ali International","role":"gateway","city":"Louisville","state":"KY","latitude":38.1744,"longitude":-85.7361},{"airport_id":"SAT","airport_name":"San Antonio International","role":"mini_station","city":"San Antonio","state":"TX","latitude":29.5337,"longitude":-98.4698},{"airport_id":"AUS","airport_name":"Austin-Bergstrom International","role":"mini_station","city":"Austin","state":"TX","latitude":30.1945,"longitude":-97.6699},{"airport_id":"PSP","airport_name":"Palm Springs International","role":"mini_station","city":"Palm Springs","state":"CA","latitude":33.8297,"longitude":-116.507},{"airport_id":"PIT","airport_name":"Pittsburgh International","role":"mini_station","city":"Pittsburgh","state":"PA","latitude":40.4915,"longitude":-80.2329},{"airport_id":"MHT","airport_name":"Manchester-Boston Regional","role":"mini_station","city":"Manchester","state":"NH","latitude":42.9326,"longitude":-71.4357},{"airport_id":"BNA","airport_name":"Nashville International","role":"mini_station","city":"Nashville","state":"TN","latitude":36.1245,"longitude":-86.6782},{"airport_id":"LEX","airport_name":"Blue Grass","role":"mini_station","city":"Lexington","state":"KY","latitude":38.0365,"longitude":-84.6059},{"airport_id":"MCO","airport_name":"Orlando International","role":"mini_station","city":"Orlando","state":"FL","latitude":28.4312,"longitude":-81.3081},{"airport_id":"OMA","airport_name":"Eppley Airfield","role":"mini_station","city":"Omaha","state":"NE","latitude":41.3032,"longitude":-95.8941}],"all_top80":[{"ident":"SDF","name":"Louisville Muhammad Ali Intl","state":"KY","lat":38.174085,"lon":-85.73649361111111,"throughput_M":6959.9,"is_amazon_air":true},{"ident":"MEM","name":"Frederick W Smith Intl/Memphis","state":"TN","lat":35.04241138888889,"lon":-89.97667916666667,"throughput_M":5365.6,"is_amazon_air":false},{"ident":"ORD","name":"Chicago O'Hare Intl","state":"IL","lat":41.97694027777778,"lon":-87.90814972222223,"throughput_M":2159.6,"is_amazon_air":false},{"ident":"CVG","name":"Cincinnati/Northern Kentucky Intl","state":"KY","lat":39.0488375,"lon":-84.66782083333334,"throughput_M":2080.3,"is_amazon_air":true},{"ident":"ONT","name":"Ontario Intl","state":"CA","lat":34.056014166666664,"lon":-117.6011875,"throughput_M":1697.2,"is_amazon_air":false},{"ident":"IND","name":"Indianapolis Intl","state":"IN","lat":39.71730555555556,"lon":-86.29463888888888,"throughput_M":1591.5,"is_amazon_air":true},{"ident":"MIA","name":"Miami Intl","state":"FL","lat":25.795361111111117,"lon":-80.29011583333333,"throughput_M":1516.3,"is_amazon_air":true},{"ident":"LAX","name":"Los Angeles Intl","state":"CA","lat":33.942496388888884,"lon":-118.40804861111113,"throughput_M":1438.0,"is_amazon_air":false},{"ident":"DFW","name":"Dallas-Fort Worth Intl","state":"TX","lat":32.89723305555555,"lon":-97.03769472222224,"throughput_M":1251.2,"is_amazon_air":false},{"ident":"JFK","name":"John F Kennedy Intl","state":"NY","lat":40.63992805555556,"lon":-73.77869222222222,"throughput_M":1198.3,"is_amazon_air":false},{"ident":"RFD","name":"Chicago/Rockford Intl","state":"IL","lat":42.195361111111104,"lon":-89.09722222222221,"throughput_M":1106.4,"is_amazon_air":true},{"ident":"OAK","name":"Oakland San Francisco Bay","state":"CA","lat":37.72126138888889,"lon":-122.22115055555555,"throughput_M":1045.3,"is_amazon_air":false},{"ident":"HNL","name":"Daniel K Inouye Intl","state":"HI","lat":21.317824722222223,"lon":-157.92025027777777,"throughput_M":882.0,"is_amazon_air":false},{"ident":"ATL","name":"Hartsfield/Jackson Atlanta Intl","state":"GA","lat":33.63669961111111,"lon":-84.427864,"throughput_M":833.2,"is_amazon_air":false},{"ident":"EWR","name":"Newark Liberty Intl","state":"NJ","lat":40.69248055555556,"lon":-74.16868777777778,"throughput_M":823.3,"is_amazon_air":true},{"ident":"IAH","name":"George Bush Intcntl/Houston","state":"TX","lat":29.984435277777777,"lon":-95.3414425,"throughput_M":754.5,"is_amazon_air":true},{"ident":"PHL","name":"Philadelphia Intl","state":"PA","lat":39.87208388888889,"lon":-75.24066305555556,"throughput_M":727.7,"is_amazon_air":true},{"ident":"PHX","name":"Phoenix Sky Harbor Intl","state":"AZ","lat":33.43427777777777,"lon":-112.01158333333332,"throughput_M":684.3,"is_amazon_air":false},{"ident":"AFW","name":"Perot Fld/Fort Worth Alliance","state":"TX","lat":32.99030666666667,"lon":-97.31942944444444,"throughput_M":674.3,"is_amazon_air":true},{"ident":"SEA","name":"Seattle-Tacoma Intl","state":"WA","lat":47.449888888888886,"lon":-122.31177777777778,"throughput_M":628.3,"is_amazon_air":true},{"ident":"ILN","name":"Wilmington Air Park","state":"OH","lat":39.42791666666666,"lon":-83.79211111111111,"throughput_M":578.5,"is_amazon_air":true},{"ident":"DEN","name":"Denver Intl","state":"CO","lat":39.861666666666665,"lon":-104.67316666666667,"throughput_M":530.2,"is_amazon_air":false},{"ident":"PDX","name":"Portland Intl","state":"OR","lat":45.58870886111112,"lon":-122.59686941666666,"throughput_M":504.0,"is_amazon_air":false},{"ident":"BWI","name":"Baltimore/Washington Intl Thurgood Marshall","state":"MD","lat":39.17572833333333,"lon":-76.66899111111111,"throughput_M":441.6,"is_amazon_air":false},{"ident":"SBD","name":"San Bernardino Intl","state":"CA","lat":34.09536111111111,"lon":-117.23488888888888,"throughput_M":418.2,"is_amazon_air":true},{"ident":"MSP","name":"Minneapolis-St Paul Intl/Wold-Chamberlain","state":"MN","lat":44.881972222222224,"lon":-93.22177777777776,"throughput_M":370.1,"is_amazon_air":true},{"ident":"CLT","name":"Charlotte/Douglas Intl","state":"NC","lat":35.213186944444445,"lon":-80.95137916666667,"throughput_M":347.9,"is_amazon_air":true},{"ident":"MCO","name":"Orlando Intl","state":"FL","lat":28.42938888888889,"lon":-81.309,"throughput_M":320.6,"is_amazon_air":true},{"ident":"BOS","name":"General Edward Lawrence Logan Intl","state":"MA","lat":42.362944444444445,"lon":-71.00638888888889,"throughput_M":314.8,"is_amazon_air":false},{"ident":"BDL","name":"Bradley Intl","state":"CT","lat":41.93903222222222,"lon":-72.68431583333334,"throughput_M":313.2,"is_amazon_air":false},{"ident":"ABE","name":"Lehigh Valley Intl","state":"PA","lat":40.652362777777775,"lon":-75.44040583333334,"throughput_M":304.2,"is_amazon_air":false},{"ident":"SLC","name":"Salt Lake City Intl","state":"UT","lat":40.78839333333333,"lon":-111.97777333333332,"throughput_M":302.9,"is_amazon_air":false},{"ident":"SAT","name":"San Antonio Intl","state":"TX","lat":29.53395833333333,"lon":-98.46905694444445,"throughput_M":279.5,"is_amazon_air":true},{"ident":"SFO","name":"San Francisco Intl","state":"CA","lat":37.618805555555554,"lon":-122.37541666666668,"throughput_M":271.6,"is_amazon_air":true},{"ident":"LAL","name":"Lakeland Linder Intl","state":"FL","lat":27.98763888888889,"lon":-82.019,"throughput_M":252.9,"is_amazon_air":true},{"ident":"AUS","name":"Austin-Bergstrom Intl","state":"TX","lat":30.194527222222224,"lon":-97.66987611111112,"throughput_M":252.4,"is_amazon_air":true},{"ident":"MHT","name":"Manchester Boston Rgnl","state":"NH","lat":42.932805555555554,"lon":-71.43575,"throughput_M":247.3,"is_amazon_air":true},{"ident":"MCI","name":"Kansas City Intl","state":"MO","lat":39.29761111111111,"lon":-94.71388888888887,"throughput_M":239.4,"is_amazon_air":false},{"ident":"RIC","name":"Richmond Intl","state":"VA","lat":37.50518111111111,"lon":-77.3197386111111,"throughput_M":232.9,"is_amazon_air":false},{"ident":"SMF","name":"Sacramento Intl","state":"CA","lat":38.69544444444444,"lon":-121.59077777777776,"throughput_M":216.5,"is_amazon_air":false},{"ident":"TPA","name":"Tampa Intl","state":"FL","lat":27.975469444444443,"lon":-82.5332475,"throughput_M":212.6,"is_amazon_air":false},{"ident":"DTW","name":"Detroit Metro Wayne County","state":"MI","lat":42.21243111111112,"lon":-83.35339333333333,"throughput_M":202.9,"is_amazon_air":false},{"ident":"BFI","name":"Boeing Fld/King County Intl","state":"WA","lat":47.52997222222222,"lon":-122.30194444444444,"throughput_M":200.5,"is_amazon_air":false},{"ident":"MHR","name":"Sacramento Mather","state":"CA","lat":38.55531083333333,"lon":-121.29721138888888,"throughput_M":187.0,"is_amazon_air":false},{"ident":"PIT","name":"Pittsburgh Intl","state":"PA","lat":40.491416666666666,"lon":-80.23269444444445,"throughput_M":184.5,"is_amazon_air":true},{"ident":"GSO","name":"Piedmont Triad Intl","state":"NC","lat":36.101326666666665,"lon":-79.94112277777778,"throughput_M":178.8,"is_amazon_air":false},{"ident":"FLL","name":"Fort Lauderdale/Hollywood Intl","state":"FL","lat":26.071666666666665,"lon":-80.14969444444445,"throughput_M":177.2,"is_amazon_air":false},{"ident":"CLE","name":"Cleveland-Hopkins Intl","state":"OH","lat":41.40940694444444,"lon":-81.85469111111111,"throughput_M":170.3,"is_amazon_air":false},{"ident":"LAS","name":"Harry Reid Intl","state":"NV","lat":36.08034277777778,"lon":-115.15244861111113,"throughput_M":168.8,"is_amazon_air":false},{"ident":"SAN","name":"San Diego Intl","state":"CA","lat":32.73356277777778,"lon":-117.18966333333334,"throughput_M":165.1,"is_amazon_air":false},{"ident":"ELP","name":"El Paso Intl","state":"TX","lat":31.80733333333333,"lon":-106.37636111111112,"throughput_M":158.8,"is_amazon_air":false},{"ident":"RDU","name":"Raleigh-Durham Intl","state":"NC","lat":35.87763888888889,"lon":-78.78747222222222,"throughput_M":157.8,"is_amazon_air":false},{"ident":"OMA","name":"Eppley Airfield","state":"NE","lat":41.30316666666666,"lon":-95.89405555555555,"throughput_M":149.7,"is_amazon_air":true},{"ident":"JAX","name":"Jacksonville Intl","state":"FL","lat":30.494045555555555,"lon":-81.68784666666667,"throughput_M":145.1,"is_amazon_air":false},{"ident":"IAD","name":"Washington Dulles Intl","state":"DC","lat":38.94745638888889,"lon":-77.45992861111111,"throughput_M":145.0,"is_amazon_air":false},{"ident":"STL","name":"St Louis Lambert Intl","state":"MO","lat":38.748698222222224,"lon":-90.3700257222222,"throughput_M":138.8,"is_amazon_air":false},{"ident":"GEG","name":"Spokane Intl","state":"WA","lat":47.61902777777778,"lon":-117.53522222222222,"throughput_M":124.6,"is_amazon_air":false},{"ident":"MDT","name":"Harrisburg Intl","state":"PA","lat":40.19319166666666,"lon":-76.76261916666667,"throughput_M":116.4,"is_amazon_air":false},{"ident":"MKE","name":"General Mitchell Intl","state":"WI","lat":42.94693194444445,"lon":-87.89706444444445,"throughput_M":112.1,"is_amazon_air":false},{"ident":"KOA","name":"Ellison Onizuka Kona Intl At Keahole","state":"HI","lat":19.738765,"lon":-156.0456311111111,"throughput_M":110.8,"is_amazon_air":false},{"ident":"RNO","name":"Reno/Tahoe Intl","state":"NV","lat":39.49911111111111,"lon":-119.76811111111112,"throughput_M":103.4,"is_amazon_air":false},{"ident":"MSY","name":"Louis Armstrong New Orleans Intl","state":"LA","lat":29.993272222222224,"lon":-90.2590275,"throughput_M":102.2,"is_amazon_air":false},{"ident":"BNA","name":"Nashville Intl","state":"TN","lat":36.124475,"lon":-86.67818055555556,"throughput_M":97.7,"is_amazon_air":true},{"ident":"SCK","name":"Stockton Metro","state":"CA","lat":37.89441194444444,"lon":-121.23874416666666,"throughput_M":92.7,"is_amazon_air":false},{"ident":"TUL","name":"Tulsa Intl","state":"OK","lat":36.19839333333333,"lon":-95.88810527777778,"throughput_M":91.7,"is_amazon_air":false},{"ident":"BOI","name":"Boise Air Trml/Gowen Fld","state":"ID","lat":43.56436111111111,"lon":-116.22286111111111,"throughput_M":90.7,"is_amazon_air":false},{"ident":"SYR","name":"Syracuse Hancock Intl","state":"NY","lat":43.11118138888889,"lon":-76.10632055555556,"throughput_M":90.3,"is_amazon_air":false},{"ident":"ABQ","name":"Albuquerque Intl Sunport","state":"NM","lat":35.03893155555556,"lon":-106.60826216666666,"throughput_M":87.1,"is_amazon_air":false},{"ident":"CAE","name":"Columbia Metro","state":"SC","lat":33.93883805555555,"lon":-81.11953555555554,"throughput_M":84.1,"is_amazon_air":false},{"ident":"GSP","name":"Greenville Spartanburg Intl","state":"SC","lat":34.89567111111111,"lon":-82.21885944444445,"throughput_M":82.6,"is_amazon_air":false},{"ident":"BUF","name":"Buffalo Niagara Intl","state":"NY","lat":42.94042722222222,"lon":-78.73056972222223,"throughput_M":79.5,"is_amazon_air":false},{"ident":"LBB","name":"Lubbock Preston Smith Intl","state":"TX","lat":33.663666666666664,"lon":-101.82055555555556,"throughput_M":77.9,"is_amazon_air":false},{"ident":"OKC","name":"OKC Will Rogers Intl","state":"OK","lat":35.393072777777775,"lon":-97.60076555555555,"throughput_M":73.5,"is_amazon_air":false},{"ident":"CID","name":"The Eastern Iowa","state":"IA","lat":41.88469444444444,"lon":-91.71080555555557,"throughput_M":72.2,"is_amazon_air":false},{"ident":"FSD","name":"Joe Foss Fld","state":"SD","lat":43.58201805555556,"lon":-96.74192527777778,"throughput_M":71.5,"is_amazon_air":false},{"ident":"PBI","name":"Palm Beach Intl","state":"FL","lat":26.683161666666667,"lon":-80.09559194444444,"throughput_M":70.7,"is_amazon_air":false},{"ident":"LCK","name":"Rickenbacker Intl","state":"OH","lat":39.813787,"lon":-82.92781372222223,"throughput_M":68.3,"is_amazon_air":false},{"ident":"LAN","name":"Capital Region Intl","state":"MI","lat":42.7786475,"lon":-84.58620555555555,"throughput_M":64.7,"is_amazon_air":false},{"ident":"BIL","name":"Billings Logan Intl","state":"MT","lat":45.80784913888888,"lon":-108.54354355555556,"throughput_M":62.8,"is_amazon_air":false},{"ident":"TYS","name":"Mc Ghee Tyson","state":"TN","lat":35.81109111111111,"lon":-83.99406722222223,"throughput_M":59.2,"is_amazon_air":false}]};
+
+const COLOR_AMAZON = '#FF9900';
+const COLOR_PRIMARY = '#0F2A4D';
+const COLOR_NEUTRAL = '#5a5a5a';
+const COLOR_LIGHT = '#cbd5e0';
+
+// === 1. Cargo concentration: top 20 horizontal bar ===
+(function(){
+  const d = [...DATA.top20_cargo].reverse();
+  const labels = d.map(r => r.ident);
+  const values = d.map(r => r.throughput_M);
+  const colors = d.map(r => r.is_amazon_air ? COLOR_AMAZON : COLOR_NEUTRAL);
+  const text = d.map(r => `${r.name} (${r.state})`);
+  Plotly.newPlot('cargoChart', [{
+    type: 'bar', orientation: 'h',
+    x: values, y: labels, marker: { color: colors },
+    text: values.map(v => v.toLocaleString()), textposition: 'outside',
+    hovertemplate: '<b>%{y}</b><br>%{customdata}<br>Cargo: %{x:,.0f}M lbs<extra></extra>',
+    customdata: text
+  }], {
+    title: { text: 'Top 20 US Cargo Airports — 2025 Throughput (M lbs)<br><sub style="font-size: 12px; color: #5a5a5a;">Orange = Amazon Air presence  ·  Gray = no Amazon presence</sub>',
+             font: { size: 16, color: COLOR_PRIMARY }, x: 0, xanchor: 'left' },
+    margin: { l: 60, r: 80, t: 80, b: 50 },
+    xaxis: { title: 'Cargo Throughput (M lbs)', gridcolor: '#eee' },
+    yaxis: { automargin: true },
+    plot_bgcolor: 'white', paper_bgcolor: 'white',
+    font: { family: 'system-ui, sans-serif', size: 12 },
+    showlegend: false,
+  }, { responsive: true, displayModeBar: false });
+})();
+
+// === 2. Network map: Amazon facilities + top80 + top3 ===
+(function(){
+  const top80 = DATA.all_top80;
+  const amazon = DATA.amazon_facilities;
+  const top3 = DATA.top3_recs;
+
+  const top80Layer = {
+    type: 'scattergeo', mode: 'markers',
+    lat: top80.map(r => r.lat), lon: top80.map(r => r.lon),
+    text: top80.map(r => `${r.ident} — ${r.name}<br>State: ${r.state}<br>Cargo: ${r.throughput_M.toFixed(0)}M lbs`),
+    marker: {
+      size: top80.map(r => Math.max(5, Math.min(35, Math.sqrt(r.throughput_M) * 0.5))),
+      color: COLOR_LIGHT, opacity: 0.55, line: { width: 0 }
+    },
+    name: 'Top-80 cargo airports', hovertemplate: '%{text}<extra></extra>'
+  };
+  const amazonLayer = {
+    type: 'scattergeo', mode: 'markers',
+    lat: amazon.map(r => r.latitude), lon: amazon.map(r => r.longitude),
+    text: amazon.map(r => `${r.airport_id} — ${r.airport_name}<br>Role: ${r.role}<br>${r.city}, ${r.state}`),
+    marker: { size: 11, color: COLOR_AMAZON, symbol: 'triangle-up', line: { width: 1, color: 'black' } },
+    name: 'Existing Amazon Air facilities', hovertemplate: '%{text}<extra></extra>'
+  };
+  const top3Layer = {
+    type: 'scattergeo', mode: 'markers+text',
+    lat: top3.map(r => r.lat), lon: top3.map(r => r.lon),
+    text: top3.map(r => `★ ${r.ident}`),
+    textposition: 'top right', textfont: { size: 14, color: COLOR_PRIMARY, family: 'system-ui' },
+    marker: { size: 22, color: COLOR_PRIMARY, symbol: 'star', line: { width: 1.5, color: 'white' } },
+    name: 'Top 3 recommended hubs', hovertemplate: '<b>%{text}</b><extra></extra>'
+  };
+
+  Plotly.newPlot('mapChart', [top80Layer, amazonLayer, top3Layer], {
+    title: { text: 'US Air-Cargo Network — Existing Amazon Footprint + Top 3 Recommendations',
+             font: { size: 16, color: COLOR_PRIMARY }, x: 0, xanchor: 'left' },
+    geo: {
+      scope: 'usa', projection: { type: 'albers usa' },
+      showland: true, landcolor: '#f5f5f5',
+      subunitcolor: '#d4d4d4', countrycolor: '#888',
+    },
+    margin: { l: 0, r: 0, t: 60, b: 0 },
+    legend: { x: 0.02, y: 0.05, bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#ddd', borderwidth: 1 },
+    plot_bgcolor: 'white', paper_bgcolor: 'white',
+    font: { family: 'system-ui, sans-serif', size: 12 },
+  }, { responsive: true, displayModeBar: false });
+})();
+
+// === 3. Heatmap of top 15 dimensions ===
+(function(){
+  const d = DATA.top15_by_index;
+  const dims = ['Cargo','Runway','Catchment','Weather','Complementarity'];
+  const z = d.map(r => [r.score_cargo, r.score_runway, r.score_catchment, r.score_weather, r.score_complementarity]);
+  const labels = d.map(r => `${r.ident} (${r.state})`);
+  Plotly.newPlot('heatmapChart', [{
+    type: 'heatmap', z: z.reverse(), x: dims, y: [...labels].reverse(),
+    colorscale: [[0,'#fef9e7'],[0.5,'#f8b454'],[1,'#d63031']],
+    text: z.map(row => row.map(v => v.toFixed(0))),
+    texttemplate: '%{text}', textfont: { size: 12, color: 'black' },
+    hovertemplate: '<b>%{y}</b><br>%{x}: %{z:.1f}<extra></extra>',
+    colorbar: { title: 'Score', thickness: 14, len: 0.7 },
+    zmin: 0, zmax: 100
+  }], {
+    title: { text: 'Dimension Scores — Top 15 Candidates by Hub Fitness Index',
+             font: { size: 16, color: COLOR_PRIMARY }, x: 0, xanchor: 'left' },
+    margin: { l: 160, r: 60, t: 70, b: 50 },
+    xaxis: { side: 'top' },
+    yaxis: { automargin: true },
+    plot_bgcolor: 'white', paper_bgcolor: 'white',
+    font: { family: 'system-ui, sans-serif', size: 12 },
+  }, { responsive: true, displayModeBar: false });
+})();
+
+// === 4. Top 3 recommendation cards ===
+(function(){
+  const recs = DATA.top3_recs;
+  const labels = ['#1','#2','#3'];
+  const takeaways = [
+    "<strong>Surfaces as #1 but not recommended.</strong> Perfect geographic isolation and a favorable latitude-proxy weather score, but 0.4M catchment makes mainland-US delivery impossible. A useful methodological boundary case.",
+    "<strong>The Northeast megalopolis pick.</strong> Largest population catchment (59M people), world-class infrastructure, existing top-10 cargo activity. Anchor a real sortation hub where Amazon has only gateways today.",
+    "<strong>The balanced central-US pick.</strong> Texas Triangle reach (25M), no single weakness, 800+ miles from any existing Amazon hub. Fills the gap between SBD and the Midwest belt."
+  ];
+  const dims = [
+    {key:'score_cargo', label:'Cargo'},
+    {key:'score_runway', label:'Runway'},
+    {key:'score_catchment', label:'Catchment'},
+    {key:'score_weather', label:'Weather'},
+    {key:'score_complementarity', label:'Complement.'}
+  ];
+  let html = '';
+  recs.forEach((r, i) => {
+    const muted = r.ident === 'HNL' ? 'muted' : '';
+    html += `<div class="rec ${muted}">
+      <div class="rank">${labels[i]}${r.ident === 'HNL' ? ' · Methodological artifact' : ' · Recommended'}</div>
+      <h3>${r.ident} — ${r.name}</h3>
+      <div class="sub">${r.state}</div>
+      <div class="score-big">${r.hub_fitness_index.toFixed(1)} <small>/ 100</small></div>`;
+    dims.forEach(d => {
+      const v = r[d.key];
+      html += `<div class="dimrow">
+        <div class="nm">${d.label}</div>
+        <div class="bar"><div class="fill" style="width: ${v}%"></div></div>
+        <div class="val">${v.toFixed(0)}</div>
+      </div>`;
+    });
+    html += `<div class="takeaway">${takeaways[i]}</div></div>`;
+  });
+  document.getElementById('recsContainer').innerHTML = html;
+})();
+</script>
+</body>
+</html>
