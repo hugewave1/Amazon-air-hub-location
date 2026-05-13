@@ -189,7 +189,7 @@ Projects 3 and 4 reuse the BTS T-100 spine pulled here — one cleaned dataset f
 
 ## 👤 Author
 
-**Aikerim Imanbayeva** · MSBA, University of Washington Tacoma
+**Aikerim Imanbayeva** · MSBA, University of Washington
 📧 artyommaths@yahoo.com · 🐙 [github.com/hugewave1](https://github.com/hugewave1)
 
 Open to data and business analytics roles at companies operating at the intersection of aviation, logistics, and consumer technology.
